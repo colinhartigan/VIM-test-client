@@ -13,6 +13,8 @@ import WeaponHeader from './sub/WeaponHeader.js';
 import ActionsDrawer from './sub/ActionsDrawer.js';
 import WeightDialog from './sub/WeightDialog.js'
 
+import useKeyboardListener from '../../services/useKeyboardListener.js'
+
 
 const useStyles = makeStyles((theme) => ({
 
@@ -53,9 +55,9 @@ const useStyles = makeStyles((theme) => ({
     paperOnTopContent: {
         width: "93%",
         background: "#424242",
-        paddingBottom: "10px",
         display: "flex",
         flexDirection: "column",
+        paddingBottom: "5px",
         position: "sticky",
         top: 0,
         zIndex: 4,
@@ -71,14 +73,13 @@ const useStyles = makeStyles((theme) => ({
         maxHeight: "350px",
         maxWidth: "100%",
         overflowX: "hidden",
-        transition: "all .2s ease",
+        transition: "all 0.5s ease-in-out",
     },
 
     //container for subcomponents
     paperCustomizingContent: {
         width: "93%",
         height: "auto",
-        marginTop: "5px",
         display: "flex",
         flexDirection: "column",
         overflowY: "auto",
@@ -91,7 +92,6 @@ const useStyles = makeStyles((theme) => ({
         flexDirection: "row",
         width: "100%",
         flexGrow: 1,
-        marginBottom: "15px",
         transition: "all .2s ease",
     },
 
@@ -140,6 +140,7 @@ function WeaponEditor(props) {
     const [open, changeOpenState] = useState(true);
     const [saving, setSaving] = useState(false);
     const [hasUpgrades, setHasUpgrades] = useState(false);
+    const [hasWallpaper, setHasWallpaper] = useState(false);
 
     //video states
     const [showingVideo, changeVideoState] = useState(false);
@@ -148,6 +149,9 @@ function WeaponEditor(props) {
 
     //weight dialog states
     const [weightDialogOpen, setWeightDialogOpen] = useState(false);
+
+    //keyboard state
+    const [keysDown] = useKeyboardListener();
 
 
     //effect listeners
@@ -169,6 +173,29 @@ function WeaponEditor(props) {
         setselectedChromaData(skinsData[initSkinData.skin_uuid].chromas[props.loadoutWeaponData.chroma_uuid])
     }, [])
 
+
+    // keyboard listeners
+    useEffect(() => {
+        console.log(keysDown)
+
+        switch (keysDown.join(' ')){
+            case 'f':
+                toggleFavoritedSkin();
+                break;
+            
+            case 'l':
+                toggleLock();
+                break;
+
+            case 'Escape':
+                save();
+                break; 
+
+            default:
+                break;
+        }
+
+    }, [keysDown])
 
     // functions
     function refresh() {
@@ -228,6 +255,12 @@ function WeaponEditor(props) {
             setHasUpgrades(false);
         } else {
             setHasUpgrades(true);
+        }
+
+        if (skinData.wallpaper !== null) {
+            setHasWallpaper(true);
+        } else {
+            setHasWallpaper(false);
         }
 
         setselectedSkinData(skinData);
@@ -445,7 +478,12 @@ function WeaponEditor(props) {
 
                             <div style={{ width: "100%", display: "flex", flexDirection: "row" }}>
 
-                                <Paper variant="outlined" outlinecolor="secondary" className={classes.mainSkinMedia} style={{ height: (showingVideo ? "35vh" : "125px"), }}>
+                                <Paper
+                                    variant="outlined"
+                                    outlinecolor="secondary"
+                                    className={classes.mainSkinMedia}
+                                    style={{ height: (showingVideo ? "35vh" : "125px"), backgroundImage: (hasWallpaper ? `linear-gradient(90deg, rgba(66, 66, 66,.5) 0%, rgba(66, 66, 66,.5) 100%), url(${selectedSkinData.wallpaper})` : null), backgroundSize: "cover", backgroundPosition: "center", transition: "background-image 0.5s ease, height 0.2s ease" }}
+                                >
                                     {getSkinMedia()}
                                 </Paper>
 
@@ -464,23 +502,26 @@ function WeaponEditor(props) {
                                 />
 
                             </div>
-                        </div>
 
-                        <div className={classes.paperCustomizingContent}>
-
-                            <div className={classes.levelSelectors} style={{ height: (hasUpgrades ? "auto" : "0px") }}>
+                            <div className={classes.levelSelectors} style={{ marginTop: (hasUpgrades ? "12px" : "0px"), height: (hasUpgrades ? "auto" : "0px"), trainsition: "height 0.5s ease" }}>
                                 <Grid container spacing={0}>
-                                    <Grid item xs={12} sm={6} style={{display: "flex", flexDirection: "row", justifyContent: "flex-start"}}>
+                                    <Grid item xs={12} sm={6} style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start" }}>
                                         <LevelSelector levelData={selectedSkinData.levels} selectedLevelIndex={selectedLevelData.index} selectedChromaIndex={selectedChromaData.index} setter={setselectedLevelData} />
                                     </Grid>
-                                    <Grid item xs={12} sm={6} style={{display: "flex", flexDirection: "row", justifyContent: "flex-end"}}>
+                                    <Grid item xs={12} sm={6} style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end" }}>
                                         <ChromaSelector levelData={selectedSkinData.levels} chromaData={selectedSkinData.chromas} selectedLevelIndex={selectedLevelData.index} selectedChromaIndex={selectedChromaData.index} setter={setselectedChromaData} />
                                     </Grid>
                                 </Grid>
 
                             </div>
 
-                            {hasUpgrades ? <Divider variant="middle" /> : null}
+                            {hasUpgrades ? <Divider variant="middle" style={{marginTop: "10px",}} /> : null}
+
+                            
+                        </div>
+
+                        <div className={classes.paperCustomizingContent} style={{ transition: "all 0.5s ease" }}>
+
 
                             <div className={classes.skinSelector}>
                                 <Grid style={{ width: "100%", height: "100%", justifySelf: "center" }} container justifyContent="flex-start" direction="row" alignItems="center" spacing={2}>

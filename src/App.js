@@ -5,6 +5,7 @@ import { ThemeProvider, createTheme } from "@material-ui/core/styles";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import { BrowserRouter as Switch, Route, HashRouter, Redirect } from "react-router-dom";
 import socket from "./services/Socket";
+import useLocalStorage from "./services/useLocalStorage";
 import { Config, setVersion, ServerVersion } from "./services/ClientConfig"
 
 
@@ -77,10 +78,11 @@ function App(props) {
 
     const [connected, setConnected] = useState(false);
 
-    const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+    const [onboardingCompleted, setOnboardingCompleted] = useLocalStorage("onboardingCompleted", false);
     const [gameRunning, setGameRunning] = useState(false);
 
     const [ready, setReady] = useState(false);
+    const [awaitingStates, setAwaitingStates] = useState(false);
 
     const [errorPage, setErrorPage] = useState(null);
 
@@ -90,48 +92,75 @@ function App(props) {
     //connect socket -> check for onboarding -> set ready true
 
     useEffect(() => {
-        connectSocket()
         socket.subscribe("onclose", disconnect, false, "onclose");
         socket.subscribe("game_not_running", gameClosed, false)
+        socket.subscribe("start_game", gameOpened, false)
+        console.log("onboarding", onboardingCompleted)
+        startup();
     }, [])
 
     useEffect(() => {
-        if (connected && !ready) {
-            getStates()
+        if (errorPage !== null) {
+            setLoading(false)
         }
-    }, [connected])
-
-    useEffect(() => {
-        console.log("checking if ready")
-        if (gameRunning) {
-            console.log("ready")
-            setReady(true)
-        }
-    }, [onboardingCompleted, gameRunning])
+    })
 
     useEffect(() => {
         checkVersion()
     }, [ServerVersion])
 
-    function stopLoading(success) {
-        setShowLoad(false)
+    useEffect(() => {
+        if (awaitingStates) {
+            if (gameRunning) {
+                forceRefreshInventory()
+                stopLoading();
+                setReady(true)
+                setAwaitingStates(false);
+                console.log("ready")
+            }
+        }
+    }, [onboardingCompleted, gameRunning])
+
+    function startup() {
+        //reset all states
+        setLoading(true);
+        setReady(false);
+        setConnected(false);
+        setErrorPage(null);
+        setGameRunning(false)
+
+        console.log("awaiting socket")
+        connectSocket()
+            .then(() => {
+                console.log("awerf")
+                setAwaitingStates(true)
+                getStates();
+                console.log("awaing states for ready")
+            });
+
+    }
+
+    function forceRefreshInventory() {
+        socket.send({ "request": "refresh_buddy_inventory" })
+        socket.send({ "request": "refresh_skin_inventory" })
+    }
+
+    function stopLoading() {
         setTimeout(() => {
             setLoading(false);
         }, 300)
     }
 
-    function gameStarted() {
-        setTimeout(() => {
-            setGameRunning(true)
-            setTimeout(() => {
-                setErrorPage(null)
-            }, 1000)
-        }, 500)
+    function gameOpened(response) {
+        console.log("game opened", response)
+        if (response === true) {
+            startup();
+        }
     }
 
-    function checkVersion(){
-        if(ServerVersion !== "" && Config.VERSION_CHECK_ENABLED){
-            if(!Config.SERVER_VERSION_COMPATABILITY.includes(ServerVersion)){
+    function checkVersion() {
+        if (ServerVersion !== "" && Config.VERSION_CHECK_ENABLED) {
+            if (!Config.SERVER_VERSION_COMPATABILITY.includes(ServerVersion)) {
                 setErrorPage(<WrongVersion />)
             } else {
                 console.log("version matches")
@@ -140,47 +169,30 @@ function App(props) {
     }
 
     async function connectSocket() {
-
-        //reset all states
-        setLoading(true);
-        setShowLoad(true);
-        setReady(false);
-        setConnected(false);
-        setErrorPage(null);
-        setOnboardingCompleted(false);
-        setGameRunning(false)
-
-        socket.connect()
-            .then((response) => {
-                console.log("done")
-                setConnected(true);
-                stopLoading();
-            })
-            .catch(() => {
-                console.log("caught something")
-                setConnected(false);
-                stopLoading();
-                setErrorPage(<ConnectionFailed retry={connectSocket} />)
-            })
-
+        return new Promise((resolve, reject) => {
+            console.log("asdf")
+            socket.connect()
+                .then((response) => {
+                    console.log("socket connected")
+                    setConnected(true);
+                    return resolve();
+                })
+                .catch(() => {
+                    console.log("caught something")
+                    setConnected(false);
+                    setErrorPage(<ConnectionFailed retry={startup} />)
+                    return reject();
+                })
+        });
     }
 
     function getStates() {
-        function onboardingCallback(response) {
-            if (Config.BYPASS_ONBOARDING === false) {
-                console.log(`onboarded: ${response}`)
-                setOnboardingCompleted(response);
-            } else {
-                setOnboardingCompleted(true)
-            }
-        }
-        socket.request({ "request": "get_onboarding_state" }, onboardingCallback)
 
         function gameRunningCallback(response) {
             console.log(`game running: ${response}`)
             setGameRunning(response)
             if (response === false) {
-                setErrorPage(<GameNotRunning callback={gameStarted} />)
+                setErrorPage(<GameNotRunning />)
             }
         }
         socket.request({ "request": "get_running_state" }, gameRunningCallback)
@@ -189,7 +201,7 @@ function App(props) {
             console.log(`server version: ${response}`)
             console.log(`client version: ${Config.FRONTEND_VERSION}`)
             setVersion(response)
-            checkVersion()
+            checkVersion();
         }
         socket.request({ "request": "get_server_version" }, serverVersionCallback)
     }
@@ -197,7 +209,7 @@ function App(props) {
 
     function startupLoading() {
         if (isLoading) {
-            return (<WebsocketHandshake open={showLoad} />)
+            return (<WebsocketHandshake open />)
         }
     }
 
@@ -205,13 +217,13 @@ function App(props) {
         console.log("disconnected")
         setConnected(false);
         setReady(false)
-        setErrorPage(<ConnectionFailed retry={connectSocket} />)
+        setErrorPage(<ConnectionFailed retry={startup} />)
     }
 
     function gameClosed() {
         setGameRunning(false)
         setReady(false)
-        setErrorPage(<GameNotRunning callback={gameStarted} />)
+        setErrorPage(<GameNotRunning />)
     }
 
     return (
@@ -234,23 +246,42 @@ function App(props) {
                     <Route exact path="/">
                         {onboardingCompleted ? <Redirect to="/collection" /> : <Redirect to="/onboarding" />}
                     </Route>
-                    <Route path="/onboarding"> 
+                    <Route path="/onboarding">
                         <Onboarding />
                     </Route>
 
                     <Route path="/collection">
-                        {Config.ENABLED_PAGES.collection === true ? <CollectionHome /> : <Redirect to="/" />}
+                        <VIMMain target={"collection"} />
                     </Route>
                     <Route path="/buddies">
-                        {Config.ENABLED_PAGES.buddies === true ? <BuddiesHome /> : <Redirect to="/" />}
+                        <VIMMain target={"buddies"} />
                     </Route>
                 </HashRouter>
-                
+
                 : null}
 
 
         </ThemeProvider>
     );
+}
+
+function VIMMain(props) {
+    const target = props.target
+
+    const routes = {
+        "collection": Config.ENABLED_PAGES.collection === true ? <CollectionHome /> : <Redirect to="/" />,
+        "buddies": Config.ENABLED_PAGES.buddies === true ? <BuddiesHome /> : <Redirect to="/" />,
+    }
+
+    return (
+        <>
+            <div style={{ height: "100vh", width: "100vw", display: "flex", overflow: "auto" }}>
+                <NavBar />
+                {routes[target]}
+            </div>
+
+        </>
+    )
 }
 
 export default App;
