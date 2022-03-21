@@ -12,6 +12,7 @@ import { Settings, Shuffle, Autorenew, SportsEsports } from '@material-ui/icons'
 import BackdroppedConfig from "../config/BackdroppedConfig.js"
 
 import socket from "../../services/Socket";
+import { Config } from "../../services/ClientConfig"
 import useKeyboardListener from '../../services/useKeyboardListener.js';
 
 
@@ -107,7 +108,7 @@ function Header(props) {
                     <Toolbar style={{height: "100%", width: "100%",}}>
 
                         <Typography variant="h5" style={{ flexGrow: 0, marginRight: theme.spacing(2) }}>
-                            VIM
+                            VIM {Config.IS_TEST_BUILD ? 'TEST CLIENT' : ''}
                         </Typography>
 
                         <div className={classes.statusBar}>
