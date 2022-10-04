@@ -5,7 +5,7 @@ import Fuse from 'fuse.js'
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 //components
-import { Grid, InputBase } from '@material-ui/core';
+import { Button, Grid, InputBase } from '@material-ui/core';
 
 //icons
 import { Search } from '@material-ui/icons'
@@ -23,9 +23,10 @@ const useStyles = makeStyles((theme) => ({
     },
 
     gridContainer: {
-        height: "calc(100% - 70px)",
+        height: "auto",
         width: "100%",
         overflowY: "auto",
+        flexGrow: 1,
         "&::-webkit-scrollbar": {
             width: 4,
         },
@@ -46,7 +47,8 @@ const useStyles = makeStyles((theme) => ({
 
     serachContainer: {
         height: "60px",
-        marginBottom: "10px",
+        marginTop: "10px",
+        marginBottom: "15px",
         width: "100%",
         display: "flex",
         flexDirection: "row",
@@ -87,9 +89,14 @@ function Buddies(props) {
 
     const loadout = props.loadout
     const inventory = props.inventory
+    const editorCallback = props.buddyEditorCallback
+    const favoriteCallback = props.favoriteCallback
+    const favoriteAllCallback = props.favoriteAllCallback
 
     const [searchTerm, setSearchTerm] = useState("")
     const [searchResults, setSearchResults] = useState([])
+
+    const [renderBuddies, setRenderBuddies] = useState(false)
 
     const [fuse, setFuse] = useState(null)
 
@@ -100,7 +107,7 @@ function Buddies(props) {
             var data = inventory[item]
             searchBank.push(data.display_name)
         }
-        setFuse(new Fuse(searchBank, {threshold: 0.4}))
+        setFuse(new Fuse(searchBank, { threshold: 0.4 }))
     }, [inventory])
 
     useEffect(() => {
@@ -114,50 +121,32 @@ function Buddies(props) {
         }
     }, [searchTerm])
 
+    useEffect(() => {
+        setTimeout(() => {
+            setRenderBuddies(true);
+        }, 1) //1ms delay to prevent lag when clicking on buddies page button
+    }, [])
 
-    // useEffect(() => {
-    //     console.log("sorting")
-    //     const invClone = JSON.parse(JSON.stringify(inventory));
-    //     var equipped = {}
-        
-    //     function checkLoadout(buddyUuid){
-    //         Object.keys(loadout).forEach(key => {
-    //             var weapon = loadout[key]
-    //             if (weapon.buddy_uuid === buddyUuid) {
-    //                 console.log("match")
-    //                 return true;
-    //             } else {
-    //                 return false
-    //             }
-    //         })
-    //     }
 
-    //     Object.keys(inventory).forEach((key) => {
-    //         console.log("e")
-    //         var buddy = invClone[key]
+    function updateBuddyFavorite(uuid, favorite) {
+        var buddyData = inventory[uuid]
+        Object.keys(buddyData.instances).forEach(key => {
+            var data = buddyData.instances[key]
+            console.log(data)
+            if (!data.locked) {
+                data.favorite = favorite
+            }
+        })
+        favoriteCallback(uuid, buddyData)
+    }
 
-    //         if (checkLoadout(buddy.uuid) === true) {
-    //             //console.log(buddy)
-    //             equipped[key] = buddy
-    //             delete invClone[key]
-    //         }
-    //     })
-
-    //     Object.keys(invClone).forEach((key) => {
-    //         var buddy = invClone[key]
-    //         //console.log(buddy)
-    //         equipped[key] = buddy
-    //     })
-
-    //     setSortedInventory(equipped)
-    //     console.log(equipped)
-    // }, [loadout])
+    function favoriteAll(fave) {
+        favoriteAllCallback(fave)
+    }
 
 
     return (
         <div className={classes.root}>
-
-            <BuddyEditor/>
 
             <div className={classes.serachContainer}>
                 <div className={classes.search}>
@@ -174,21 +163,26 @@ function Buddies(props) {
                         onChange={(event) => { setSearchTerm(event.target.value) }}
                     />
                 </div>
+
+                <div style={{ width: "auto", height: "100%", marginLeft: "10px", display: "flex", flexDirection: "row", justifyContent: "flex", alignItems: "center" }}>
+                    <Button variant="contained" disableElevation color="secondary" onClick={() => { favoriteAll(true) }} style={{ margin: "5px" }}>Favorite all</Button>
+                    <Button variant="contained" disableElevation color="secondary" onClick={() => { favoriteAll(false) }} style={{ margin: "5px" }}>Unfavorite all</Button>
+                </div>
             </div>
 
             <div className={classes.gridContainer}>
                 <Grid container spacing={3} className={classes.mainGrid} direction="row" justifyContent="flex-start" alignItems="flex-start">
-                    {Object.keys(inventory).map((key) => {
+                    {inventory !== undefined && renderBuddies ? Object.keys(inventory).map((key) => {
                         var data = inventory[key]
 
                         return (
-                            searchResults.includes(data.display_name) || searchResults.length === 0 ?  
+                            searchResults.includes(data.display_name) || searchResults.length === 0 ?
                                 <Grid item key={data.display_name} xl={3} lg={4} md={6} sm={12} xs={12}>
-                                    <BuddyItem data={data} loadout={loadout}/>
+                                    <BuddyItem data={data} loadout={loadout} buddyEditorCallback={editorCallback} favoriteCallback={updateBuddyFavorite} />
                                 </Grid>
-                            : null
+                                : null
                         )
-                    })}
+                    }) : null}
 
                 </Grid>
             </div>

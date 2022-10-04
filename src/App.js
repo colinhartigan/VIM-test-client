@@ -4,18 +4,27 @@ import { useEffect, useState, useRef } from "react";
 import { ThemeProvider, createTheme } from "@material-ui/core/styles";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import { BrowserRouter as Switch, Route, HashRouter, Redirect } from "react-router-dom";
-import socket from "./services/Socket";
 import useLocalStorage from "./services/useLocalStorage";
 import { Config, setVersion, ServerVersion } from "./services/ClientConfig"
+
+import socket from "./services/Socket";
+
+import { useLoadoutRunner } from "./services/useLoadout.js";
+import { useInventoryRunner } from "./services/useInventory.js"
+import { useConfigRunner } from "./services/useConfig";
 
 
 //pages
 import CollectionHome from "./pages/CollectionHome"
+import LoadoutsHome from "./pages/LoadoutsHome"
 import BuddiesHome from "./pages/BuddiesHome"
 import Onboarding from "./pages/Onboarding"
+import About from "./pages/About"
 
 //components
 import NavBar from './components/misc/Navigation'
+import Header from './components/misc/Header.js'
+import Footer from './components/misc/Footer.js'
 
 //error pages
 import ConnectionFailed from "./components/errors/ConnectionFailed.js"
@@ -132,7 +141,6 @@ function App(props) {
         console.log("awaiting socket")
         connectSocket()
             .then(() => {
-                console.log("awerf")
                 setAwaitingStates(true)
                 getStates();
                 console.log("awaing states for ready")
@@ -244,17 +252,14 @@ function App(props) {
             {ready ?
                 <HashRouter basename="/">
                     <Route exact path="/">
-                        {onboardingCompleted ? <Redirect to="/collection" /> : <Redirect to="/onboarding" />}
+                        {onboardingCompleted ? <Redirect to="/vim" /> : <Redirect to="/onboarding" />}
                     </Route>
                     <Route path="/onboarding">
                         <Onboarding />
                     </Route>
 
-                    <Route path="/collection">
-                        <VIMMain target={"collection"} />
-                    </Route>
-                    <Route path="/buddies">
-                        <VIMMain target={"buddies"} />
+                    <Route path="/vim">
+                        <VIMMain />
                     </Route>
                 </HashRouter>
 
@@ -266,18 +271,29 @@ function App(props) {
 }
 
 function VIMMain(props) {
-    const target = props.target
+    const [target, setTarget] = useLocalStorage("lastVisitedPage", "collection")
+
+    const [loadout] = useLoadoutRunner();
+    const [inv] = useInventoryRunner();
+    const [config] = useConfigRunner();
 
     const routes = {
         "collection": Config.ENABLED_PAGES.collection === true ? <CollectionHome /> : <Redirect to="/" />,
         "buddies": Config.ENABLED_PAGES.buddies === true ? <BuddiesHome /> : <Redirect to="/" />,
+        "loadouts": Config.ENABLED_PAGES.loadouts === true ? <LoadoutsHome /> : <Redirect to="/" />,
+
+        "about": <About />,
     }
 
     return (
         <>
-            <div style={{ height: "100vh", width: "100vw", display: "flex", overflow: "auto" }}>
-                <NavBar />
-                {routes[target]}
+            <div style={{ height: "100vh", width: "100vw", display: "flex", flexDirection: "row", overflow: "auto" }}>
+                <NavBar setTarget={setTarget} />
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+                    <Header />
+                    {routes[target]}
+                    <Footer />
+                </div>
             </div>
 
         </>

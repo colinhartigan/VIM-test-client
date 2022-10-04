@@ -37,7 +37,7 @@ const backup = { //unused backups which had true sizing instead of scaling with 
     "2f59173c-4bed-b6c3-2191-dea9b58be9c7": ["auto", "20px"], //melee
 }
 
-const scaleOverrides = {
+const weaponImageScales = {
     "29a0cfab-485b-f5d5-779a-b59f85e204a8": ["45% auto", "auto 60%"], //classic
     "42da8ccc-40d5-affc-beec-15aa47b42eda": ["60% auto", "auto 35%"], //shorty
     "44d4e95c-4157-0037-81b2-17841bf2e8e3": ["45% auto", "auto 60%"], //frenzy
@@ -197,6 +197,9 @@ function Weapon(props) {
     const [skinData, updateSkinData] = useState({});
     const [showSkinName, updateSkinNameVisibility] = useState(false);
 
+    const [showVideo, setShowVideo] = useState(false)
+    const [hoverTimeout, setHoverTimeout] = useState(null);
+
     const [scaleIndex, setScaleIndex] = useState(0);
 
     const [weaponImage, setImage] = useState("");
@@ -241,14 +244,19 @@ function Weapon(props) {
 
     function onHover() {
         updateSkinNameVisibility(true);
+        setHoverTimeout(setTimeout(() => {
+            setShowVideo(true);
+        }, 750))
     };
 
     function offHover() {
         updateSkinNameVisibility(false);
+        clearTimeout(hoverTimeout);
+        setShowVideo(false);
     };
 
     function select() {
-        if(!bugged && props.data !== undefined){
+        if (!bugged && props.data !== undefined) {
             console.log(props)
             // make sure the skin isn't falsely being displayed in inventory (if it's refunded everything breaks)
             props.weaponEditorCallback(props.uuid);
@@ -256,7 +264,7 @@ function Weapon(props) {
     }
 
     return (
-        <Fade in style={{ transitionDelay: '500ms' }}>
+        <Fade in style={{ transitionDelay: '500ms', transition: ".25s width ease !important" }}>
             <Paper
                 className={classes.weaponPaper}
                 variant="outlined"
@@ -272,10 +280,15 @@ function Weapon(props) {
                             //backgroundPosition: props.uuid === "2f59173c-4bed-b6c3-2191-dea9b58be9c7" ? "50% 35%" : (!props.useLargeWeaponImage ? "50% 40%" : "50% 50%"), 
                             backgroundPosition: "50% 50%",
                             backgroundImage: skinData !== {} ? `url(${weaponImage})` : `url("https://media.valorant-api.com/weapons/${props.uuid}/displayicon.png")`,
-                            backgroundSize: scaleOverrides[props.uuid][scaleIndex],
-                            //props.uuid !== "2f59173c-4bed-b6c3-2191-dea9b58be9c7" ? (!props.useLargeWeaponImage ? `${props.uuid in scaleOverrides ? scaleOverrides[props.uuid][0] : stockImageSize} auto` : `calc(${scaleOverrides[props.uuid][0]} + ${scaleOverrides[props.uuid][1]}) auto`) : "auto 80%",
+                            backgroundSize: weaponImageScales[props.uuid][scaleIndex],
+                            overflow: "hidden"
+                            //props.uuid !== "2f59173c-4bed-b6c3-2191-dea9b58be9c7" ? (!props.useLargeWeaponImage ? `${props.uuid in weaponImageScales ? weaponImageScales[props.uuid][0] : stockImageSize} auto` : `calc(${weaponImageScales[props.uuid][0]} + ${weaponImageScales[props.uuid][1]}) auto`) : "auto 80%",
                         }}
-                    />
+                    >
+                        <Fade in={showVideo} timeout={500} mountOnEnter unmountOnExit style={{overflow: "hidden", }}>
+                            <video preload src={skinData.chroma_video !== null ? skinData.chroma_video : (skinData.level_video !== null ? skinData.level_video : null)} type="video/mp4" controls={false} muted autoPlay onEnded={() => { setShowVideo(false) }} style={{ filter: "brightness(0.6)", width: "100%", height: "100%", position: "absolute", objectFit: "cover", overflow: "hidden", flexGrow: 0, alignSelf: "center", borderRadius: "4px" }} />
+                        </Fade>
+                    </div>
                 </Fade>
 
                 {/* <div className={classes.bottomGradient} /> */}

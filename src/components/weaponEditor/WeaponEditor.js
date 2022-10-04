@@ -2,9 +2,10 @@ import { React, useEffect, useState } from 'react';
 
 //utilities
 import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useConfig } from '../../services/useConfig'
 
 //components
-import { Grow, Backdrop, Paper, Grid, Container, Divider, IconButton, Tooltip, ClickAwayListener } from '@material-ui/core';
+import { Grow, Backdrop, Paper, Grid, Container, Divider, IconButton, Tooltip, Button } from '@material-ui/core';
 
 import LevelSelector from './sub/LevelSelector.js';
 import ChromaSelector from './sub/ChromaSelector.js';
@@ -78,7 +79,7 @@ const useStyles = makeStyles((theme) => ({
 
     //container for subcomponents
     paperCustomizingContent: {
-        width: "93%",
+        width: "95%",
         height: "auto",
         display: "flex",
         flexDirection: "column",
@@ -93,6 +94,8 @@ const useStyles = makeStyles((theme) => ({
         width: "100%",
         flexGrow: 1,
         transition: "all .2s ease",
+        alignItems: "center",
+        justifyContent: "center",
     },
 
     skinSelector: {
@@ -118,9 +121,17 @@ function WeaponEditor(props) {
     const initSkinData = props.initialSkinData
 
     //skin data states
-    const [selectedSkinData, setselectedSkinData] = useState(skinsData[initSkinData.skin_uuid]);
-    const [selectedLevelData, setselectedLevelData] = useState(skinsData[initSkinData.skin_uuid].levels[props.loadoutWeaponData.level_uuid])
-    const [selectedChromaData, setselectedChromaData] = useState(skinsData[initSkinData.skin_uuid].chromas[props.loadoutWeaponData.chroma_uuid])
+    const [selectedSkinData, setSelectedSkinData] = useState(skinsData[initSkinData.skin_uuid]);
+    const [selectedLevelData, setSelectedLevelData] = useState(skinsData[initSkinData.skin_uuid].levels[props.loadoutWeaponData.level_uuid])
+    const [selectedChromaData, setSelectedChromaData] = useState(skinsData[initSkinData.skin_uuid].chromas[props.loadoutWeaponData.chroma_uuid])
+
+    //equipped states
+    const [equippedSkinData, setEquippedSkinData] = useState(skinsData[initSkinData.skin_uuid]);
+    const [equippedLevelData, setEquippedLevelData] = useState(skinsData[initSkinData.skin_uuid].levels[props.loadoutWeaponData.level_uuid])
+    const [equippedChromaData, setEquippedChromaData] = useState(skinsData[initSkinData.skin_uuid].chromas[props.loadoutWeaponData.chroma_uuid])
+    const [equippedDataSelected, setEquippedDataSelected] = useState(true)
+    const [selectedSkinIsEquipped, setSelectedSkinIsEquipped] = useState(false)
+    const [equipable, setEquipable] = useState(false)
 
     //favorites states
     const [isFavoriteSkin, setIsFavoriteSkin] = useState(skinsData[initSkinData.skin_uuid].favorite)
@@ -153,6 +164,10 @@ function WeaponEditor(props) {
     //keyboard state
     const [keysDown] = useKeyboardListener();
 
+    //config
+    const [config] = useConfig();
+    const showLockedSkins = config.app.settings.show_locked_skins.value;
+
 
     //effect listeners
     useEffect(() => {
@@ -168,9 +183,9 @@ function WeaponEditor(props) {
 
     // on initial open, update level/chroma selectors
     useEffect(() => {
-        equipSkin(initSkinData.skin_uuid);
-        setselectedLevelData(skinsData[initSkinData.skin_uuid].levels[props.loadoutWeaponData.level_uuid])
-        setselectedChromaData(skinsData[initSkinData.skin_uuid].chromas[props.loadoutWeaponData.chroma_uuid])
+        selectSkin(initSkinData.skin_uuid);
+        setSelectedLevelData(skinsData[initSkinData.skin_uuid].levels[props.loadoutWeaponData.level_uuid])
+        setSelectedChromaData(skinsData[initSkinData.skin_uuid].chromas[props.loadoutWeaponData.chroma_uuid])
     }, [])
 
 
@@ -178,18 +193,22 @@ function WeaponEditor(props) {
     useEffect(() => {
         console.log(keysDown)
 
-        switch (keysDown.join(' ')){
+        switch (keysDown.join(' ')) {
             case 'f':
                 toggleFavoritedSkin();
                 break;
-            
+
             case 'l':
                 toggleLock();
                 break;
 
             case 'Escape':
                 save();
-                break; 
+                break;
+
+            case 'e':
+                equipSkin();
+                break;
 
             default:
                 break;
@@ -203,16 +222,23 @@ function WeaponEditor(props) {
         refreshFavorited();
         refreshFavoritedLevels();
         refreshFavoritedChromas();
+
+        var equipable = false;
+        if (selectedLevelData.unlocked === true && selectedChromaData.unlocked === true) {
+            equipable = true;
+        }
+        setEquipable(equipable);
     }
 
     function save() {
         //update if there were changes to favorites and stuff
+        console.log(equippedSkinData)
         setSaving(true);
         var data = {
             weaponUuid: props.weaponUuid,
-            skinUuid: selectedSkinData["uuid"],
-            levelUuid: selectedLevelData["uuid"],
-            chromaUuid: selectedChromaData["uuid"],
+            skinUuid: equippedSkinData["uuid"],
+            levelUuid: equippedLevelData["uuid"],
+            chromaUuid: equippedChromaData["uuid"],
             inventoryData: inventoryWeaponData,
             skinsData: skinsData,
         }
@@ -221,8 +247,7 @@ function WeaponEditor(props) {
         var oldLevelId = initSkinData.level_uuid
         var sameSkin = selectedLevelData["uuid"] === oldLevelId && selectedChromaData["uuid"] === oldChromaId && selectedSkinData["uuid"] === oldSkinId;
 
-        var payload = JSON.stringify(data);
-        props.saveCallback(payload, sameSkin)
+        props.saveCallback(data, sameSkin)
             .then(() => {
                 close();
             });
@@ -235,19 +260,13 @@ function WeaponEditor(props) {
         }, 100)
     }
 
-    function equipSkin(skinUuid) {
+    function selectSkin(skinUuid) {
         var skinData = skinsData[skinUuid];
-        var highestLevelIndex = 0;
-        var highestChromaIndex = 0;
+        var highestLevelOwnedIndex = 1;
 
         for (var i = 0; i < Object.keys(skinData.levels).length; i++) {
             if (skinData.levels[Object.keys(skinData.levels)[i]].unlocked === true) {
-                highestLevelIndex = skinData.levels[Object.keys(skinData.levels)[i]].index;
-            }
-        }
-        for (var j = 0; j < Object.keys(skinData.chromas).length; j++) {
-            if (skinData.chromas[Object.keys(skinData.chromas)[j]].unlocked === true) {
-                highestChromaIndex = skinData.chromas[Object.keys(skinData.chromas)[j]].index;
+                highestLevelOwnedIndex = skinData.levels[Object.keys(skinData.levels)[i]].index;
             }
         }
 
@@ -263,12 +282,31 @@ function WeaponEditor(props) {
             setHasWallpaper(false);
         }
 
-        setselectedSkinData(skinData);
-        setselectedLevelData(skinData.levels[Object.keys(skinData.levels)[highestLevelIndex - 1]]);
-        setselectedChromaData(skinData.chromas[Object.keys(skinData.chromas)[0]]);
+        var levelData = skinData.levels[Object.keys(skinData.levels)[highestLevelOwnedIndex - 1]];
+        var chromaData = skinData.chromas[Object.keys(skinData.chromas)[0]];
+
+        setSelectedSkinData(skinData);
+        setSelectedSkinIsEquipped(skinData.uuid === equippedSkinData.uuid);
+        setSelectedLevelData(levelData);
+        setSelectedChromaData(chromaData);
         changeVideoState(false);
         changeControlsState(false);
     }
+
+    function equipSkin() {
+        setEquippedSkinData(selectedSkinData);
+        setEquippedLevelData(selectedLevelData);
+        setEquippedChromaData(selectedChromaData);
+        setSelectedSkinIsEquipped(true);
+    }
+
+    useEffect(() => {
+        if (selectedSkinData.uuid === equippedSkinData.uuid && selectedLevelData.uuid === equippedLevelData.uuid && selectedChromaData.uuid === equippedChromaData.uuid) {
+            setEquippedDataSelected(true)
+        } else {
+            setEquippedDataSelected(false)
+        }
+    }, [selectedSkinData, selectedLevelData, selectedChromaData, equippedChromaData, equippedSkinData, equippedLevelData])
 
     // lock a weapon's skin so it can't be changed by randomizer
     function toggleLock() {
@@ -411,6 +449,7 @@ function WeaponEditor(props) {
     function getSkinMedia() {
         var showChromaVideo = false;
         var showLevelImage = false;
+        console.log(selectedLevelData);
         if (selectedChromaData.video_preview !== null) {
             showChromaVideo = true;
         }
@@ -446,7 +485,7 @@ function WeaponEditor(props) {
     if (inventoryWeaponData == null && initSkinData == null) {
 
         return (
-            null// TODO: THIS SHOULD RETURN SOME SORT OF ERROR
+            null
         )
 
     } else {
@@ -504,21 +543,40 @@ function WeaponEditor(props) {
                             </div>
 
                             <div className={classes.levelSelectors} style={{ marginTop: (hasUpgrades ? "12px" : "0px"), height: (hasUpgrades ? "auto" : "0px"), trainsition: "height 0.5s ease" }}>
-                                <Grid container spacing={0}>
-                                    <Grid item xs={12} sm={6} style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start" }}>
-                                        <LevelSelector levelData={selectedSkinData.levels} selectedLevelIndex={selectedLevelData.index} selectedChromaIndex={selectedChromaData.index} setter={setselectedLevelData} />
+                                <Grid container spacing={0} style={{}}>
+                                    <Grid item xs={12} sm={6} style={{ display: "flex", flexDirection: "row", justifyContent: "flex-start", }}>
+                                        <LevelSelector
+                                            levelData={selectedSkinData.levels}
+                                            selectedLevelIndex={selectedLevelData.index}
+                                            selectedChromaIndex={selectedChromaData.index}
+                                            equippedLevelIndex={equippedLevelData.index}
+                                            selectedSkinIsEquipped={selectedSkinIsEquipped}
+                                            setter={setSelectedLevelData}
+                                        />
                                     </Grid>
-                                    <Grid item xs={12} sm={6} style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end" }}>
-                                        <ChromaSelector levelData={selectedSkinData.levels} chromaData={selectedSkinData.chromas} selectedLevelIndex={selectedLevelData.index} selectedChromaIndex={selectedChromaData.index} setter={setselectedChromaData} />
+                                    <Grid item xs={12} sm={6} style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end", }}>
+                                        <ChromaSelector
+                                            levelData={selectedSkinData.levels}
+                                            chromaData={selectedSkinData.chromas}
+                                            selectedLevelIndex={selectedLevelData.index}
+                                            selectedChromaIndex={selectedChromaData.index}
+                                            equippedChromaIndex={equippedChromaData.index}
+                                            selectedSkinIsEquipped={selectedSkinIsEquipped}
+                                            setter={setSelectedChromaData}
+                                        />
                                     </Grid>
                                 </Grid>
 
                             </div>
 
-                            {hasUpgrades ? <Divider variant="middle" style={{marginTop: "10px",}} /> : null}
+                            <Button variant="outlined" color="primary" onClick={equipSkin} disabled={equippedDataSelected ? true : false || !equipable} style={{ marginTop: "10px", width: "100%", }}>
+                                {equipable ? (!equippedDataSelected ? `Equip ${selectedSkinData.display_name}${selectedLevelData.index !== 1 ? ` // level ${selectedLevelData.index}` : ''}${selectedChromaData.index !== 1 ? ` // ${selectedChromaData.display_name}` : ''}` : 'Equipped') : "Locked"}
+                            </Button>
 
-                            
+                            <Divider variant="middle" style={{ marginTop: "12px", }} />
+
                         </div>
+
 
                         <div className={classes.paperCustomizingContent} style={{ transition: "all 0.5s ease" }}>
 
@@ -528,12 +586,15 @@ function WeaponEditor(props) {
 
                                     {Object.keys(skinsData).map(uuid => {
                                         var data = skinsData[uuid];
-                                        return (
-                                            <Grid item key={data.display_name} xs={4}>
-                                                <Weapon skinData={data} weaponData={inventoryWeaponData} equip={equipSkin} selected={selectedSkinData} />
-                                            </Grid>
-                                        )
-                                    })}
+                                        if (!data.unlocked && !showLockedSkins) {
+                                            return null;
+                                        } else {
+                                            return (
+                                                <Grid item key={data.display_name} xs={4}>
+                                                    <Weapon skinData={data} weaponData={inventoryWeaponData} select={selectSkin} selected={selectedSkinData} equipped={data.uuid === equippedSkinData.uuid} />
+                                                </Grid>
+                                            )
+                                        }})}
                                 </Grid>
                             </div>
 

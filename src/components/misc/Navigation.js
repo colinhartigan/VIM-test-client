@@ -10,7 +10,7 @@ import { Drawer, Divider, List, IconButton, ListItem, ListItemIcon, ListItemText
 
 //icons
 import { ChevronLeft, ChevronRight } from '@material-ui/icons';
-import { mdiPistol, mdiInformation, mdiAlert, mdiSpade } from '@mdi/js';
+import { mdiPistol, mdiInformation, mdiAlert, mdiSpade, mdiFolderMultiple } from '@mdi/js';
 
 //services
 import { Config } from '../../services/ClientConfig.js'
@@ -30,38 +30,44 @@ const useStyles = makeStyles((theme) => ({
 
 }));
 
-function NavBar() {
+function NavBar(props) {
     const classes = useStyles();
     const theme = useTheme();
 
-    const [open, setOpen] = useState(false)
-    const [redirect, setRedirect] = useState(null)
+    const setTarget = props.setTarget;
 
-    const iconSize = 1.25;
+    const [open, setOpen] = useState(false)
+
+    const iconSize = 1.1;
     const tabs = [
         {
             "name": "Skins",
             "icon": mdiPistol,
-            "path": "/collection",
+            "path": "collection",
             "enabled": Config.ENABLED_PAGES.collection,
+        },
+        {
+            "name": "Loadouts",
+            "icon": mdiFolderMultiple,
+            "path": "loadouts",
+            "enabled": Config.ENABLED_PAGES.loadouts,
         },
         {
             "name": "Buddies",
             "icon": mdiSpade,
-            "path": "/buddies",
+            "path": "buddies",
             "enabled": Config.ENABLED_PAGES.buddies,
         },
     ]
 
     function selectPage(path) {
-        setRedirect(<Redirect to={path} />)
+        setTarget(path)
     }
 
     return (
         <>
             {Config.NAVIGATION_ENABLED ?
                 <div style={{ display: "flex", }}>
-                    {redirect}
                     <Drawer
                         variant="permanent"
                         className={classes.drawer}
@@ -95,14 +101,14 @@ function NavBar() {
 
                             <div style={{ position: "absolute", bottom: 0, width: "100%" }}>
                                 <Divider />
-                                <ListItem button key={"Status"}>
+                                {/* <ListItem button key={"Status"}>
                                     <ListItemIcon><Icon
                                         path={mdiAlert}
                                         size={1}
                                     /></ListItemIcon>
                                     <ListItemText primary={"Status"} />
-                                </ListItem>
-                                <ListItem button key={"about"}>
+                                </ListItem> */}
+                                <ListItem button key={"about"} onClick={() => {selectPage("about")}}>
                                     <ListItemIcon><Icon
                                         path={mdiInformation}
                                         size={1}

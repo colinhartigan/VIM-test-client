@@ -1,7 +1,7 @@
 {
   "name": "VIM",
   "version": "0.1.0",
-  "homepage": "https://colinhartigan.github.io/VIM-test-client",
+  "homepage": "https://colinhartigan.github.io/valorant-inventory-manager",
   "private": false,
   "dependencies": {
     "@material-ui/core": "^4.12.3",
@@ -16,8 +16,11 @@
     "clsx": "^1.1.1",
     "fuse.js": "^6.5.3",
     "fuzzysort": "^1.1.4",
+    "hotkeys-js": "^3.8.7",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-hooks-global-state": "^1.0.2",
+    "react-hotkeys-hook": "^3.4.4",
     "react-router-dom": "^5.3.0",
     "react-scripts": "^4.0.3",
     "socket.io-client": "^4.2.0",

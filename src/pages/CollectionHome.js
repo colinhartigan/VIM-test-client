@@ -4,12 +4,12 @@ import { React, useEffect, useState } from 'react';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 //components
-import Header from '../components/misc/Header.js'
-import Footer from '../components/misc/Footer.js'
 import WeaponEditor from '../components/weaponEditor/WeaponEditor.js'
 import Collection from '../components/collection/Collection.js'
 
 import socket from "../services/Socket";
+import { useLoadout } from "../services/useLoadout"
+import { useInventory } from "../services/useInventory"
 
 import { Grid, Container, Typography } from '@material-ui/core'
 
@@ -23,25 +23,18 @@ function CollectionHome(props) {
     const classes = useStyles();
     const theme = useTheme();
 
+    const [loadout, forceUpdateLoadout] = useLoadout();
+    const [inventory, forceUpdateInventory] = useInventory()
+
     const [loaded, setLoaded] = useState(false);
-    const [inventoryData, updateInventoryData] = useState({});
     const [showWeaponEditor, setWeaponEditorState] = useState(false);
-    const [loadout, setLoadout] = useState({});
+
     const [weaponEditor, setWeaponEditor] = useState();
-    const [uniqueSkinsOwned, setUniqueSkinsOwned] = useState(0);
+    const [uniqueSkinsOwned, setUniqueSkinsOwned] = useState(-1);
 
     useEffect(() => {
-        if (!loaded) {
-            load();
-            setLoaded(true);
-        }
-
-        function updatedLoadoutCallback(response) {
-            console.log(response);
-            setLoadout(response.loadout)
-        }
-        socket.subscribe("loadout_updated", updatedLoadoutCallback)
-    }, []);
+        console.log(inventory)
+    }, [])
 
     useEffect(() => {
         if (!showWeaponEditor) {
@@ -51,52 +44,42 @@ function CollectionHome(props) {
 
     useEffect(() => {
         // count how many skins are owned for skin changer warning dialog
-        var skinsOwned = 0;
+        var unique = 0
 
-        for (var weapon in inventoryData) {
-            skinsOwned += Object.keys(inventoryData[weapon].skins).length - 1;
+        for (var weapon in inventory.skins) {
+            var owned = {}
+            for (var skin in inventory.skins[weapon].skins) {
+                if(inventory.skins[weapon].skins[skin].unlocked){
+                    owned[skin] = inventory.skins[weapon].skins[skin]
+                }
+            }
+            console.log(owned)
+            unique += Object.keys(owned).length - 1; //-1 for default skin
         }
-        setUniqueSkinsOwned(skinsOwned);
-    }, [inventoryData])
-
-    function load() {
-        updateInventory();
-        updateLoadout();
-    }
-
-    function updateInventory() {
-        function callback(response) {
-            updateInventoryData(response.skins);
-        }
-        socket.request({ "request": "fetch_inventory" }, callback)
-    }
-
-    function updateLoadout() {
-        function callback(response) {
-            setLoadout(response.loadout);
-        }
-        socket.request({ "request": "fetch_loadout" }, callback)
-    }
+        setUniqueSkinsOwned(unique);
+    }, [inventory.skins])
 
     function modificationMenu(uuid) {
+        console.log(inventory)
         setWeaponEditorState(true);
-        setWeaponEditor(<WeaponEditor weaponUuid={uuid} initialSkinData={loadout[uuid]} inventoryData={inventoryData} loadoutWeaponData={loadout[uuid]} saveCallback={saveCallback} closeEditor={closeEditor} />)
+        setWeaponEditor(<WeaponEditor weaponUuid={uuid} initialSkinData={loadout[uuid]} inventoryData={inventory.skins} loadoutWeaponData={loadout[uuid]} saveCallback={saveCallback} closeEditor={closeEditor} />)
     };
 
     async function saveCallback(payload, sameSkin) {
         return new Promise((resolve, reject) => {
 
             function inventoryCallback(response) {
-                updateInventoryData(response);
+                forceUpdateInventory(response, "skins");
                 resolve();
             }
 
             function putCallback(response) {
-                console.log("put")
-                setLoadout(response.loadout);
+                console.log("put skin")
+                forceUpdateLoadout(response);
             }
 
-            socket.request({ "request": "update_inventory", "args": { "payload": payload } }, inventoryCallback);
+            payload = JSON.stringify(payload);
+            socket.request({ "request": "update_skin_inventory", "args": { "payload": payload } }, inventoryCallback);
             if (!sameSkin) {
                 socket.request({ "request": "put_weapon", "args": { "payload": payload } }, putCallback);
             }
@@ -111,15 +94,13 @@ function CollectionHome(props) {
     }
 
     return (
-        <div style={{ height: "100%", margin: "auto", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "auto", flexGrow: 1 }}>
-            <Header />
-            {inventoryData !== {} ?
+        <div style={{ height: "100%", width: "100%", margin: "auto", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "auto", flexGrow: 1 }}>
+            {inventory.skins !== {} ?
                 <Container maxWidth={false} style={{ display: "flex", height: "auto", flexGrow: 1, }}>
                     {weaponEditor}
-                    <Collection style={{ padding: "20px 0px 20px 0px" }} weaponEditorCallback={modificationMenu} loadout={loadout} setLoadout={setLoadout} skinsOwned={uniqueSkinsOwned} />
+                    <Collection style={{ padding: "20px 0px 20px 0px" }} weaponEditorCallback={modificationMenu} loadout={loadout} setLoadout={null} skinsOwned={uniqueSkinsOwned} />
                 </Container>
                 : null}
-            <Footer />
         </div>
     )
 }
