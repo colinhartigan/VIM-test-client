@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 
 //utilities
-import { ThemeProvider, createTheme } from "@material-ui/core/styles";
-import CssBaseline from "@material-ui/core/CssBaseline";
+import { ThemeProvider, StyledEngineProvider, createTheme } from "@mui/material/styles";
+import { Typography } from "@mui/material";
+import CssBaseline from "@mui/material/CssBaseline";
 import { BrowserRouter as Switch, Route, HashRouter, Redirect } from "react-router-dom";
 import useLocalStorage from "./services/useLocalStorage";
 import { Config, setVersion, ServerVersion } from "./services/ClientConfig"
@@ -12,6 +13,7 @@ import socket from "./services/Socket";
 import { useLoadoutRunner } from "./services/useLoadout.js";
 import { useInventoryRunner } from "./services/useInventory.js"
 import { useConfigRunner } from "./services/useConfig";
+import { useProfilesRunner } from "./services/useProfiles";
 
 
 //pages
@@ -36,7 +38,7 @@ import WebsocketHandshake from "./components/misc/WebsocketHandshake";
 
 const mainTheme = createTheme({
     palette: {
-        type: "dark",
+        mode: "dark",
         primary: {
             main: "#fa7581",
         },
@@ -95,6 +97,8 @@ function App(props) {
 
     const [errorPage, setErrorPage] = useState(null);
 
+    const [config, activateConfig] = useConfigRunner();
+
     // WEBSOCKETS MAKE ME WANT TO KILL MYSELF (9/6/2021)
     //----------------------------------------------------------------------------------
 
@@ -125,6 +129,7 @@ function App(props) {
                 stopLoading();
                 setReady(true)
                 setAwaitingStates(false);
+                activateConfig();
                 console.log("ready")
             }
         }
@@ -151,6 +156,7 @@ function App(props) {
     function forceRefreshInventory() {
         socket.send({ "request": "refresh_buddy_inventory" })
         socket.send({ "request": "refresh_skin_inventory" })
+        socket.send({ "request": "refresh_profiles" })
     }
 
     function stopLoading() {
@@ -235,47 +241,54 @@ function App(props) {
     }
 
     return (
-        <ThemeProvider theme={mainTheme}>
-            <CssBaseline />
-            {/* <AnimatedCursor
-                color="255,255,255"
-                innerSize={12}
-                outerSize={18}
-                outerScale={1.5}
-                trailingSpeed={4}
-            /> */}
+        <StyledEngineProvider injectFirst>
+            <ThemeProvider theme={mainTheme}>
+                <CssBaseline />
+                {/* <AnimatedCursor
+                    color="255,255,255"
+                    innerSize={12}
+                    outerSize={18}
+                    outerScale={1.5}
+                    trailingSpeed={4}
+                /> */}
+                {Config.TEST_BUILD ?
+                    <div style={{ width: "100vw", height: "100vh", zIndex: 2000, border: ".2rem solid red", position: "absolute", display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "center", pointerEvents: "none" }}>
+                        <Typography variant="body1" sx={{ background: "red", padding: "5px" }}>VIM TEST BUILD</Typography>
+                    </div>
+                    : null}
+                {errorPage}
 
-            {errorPage}
+                {startupLoading()}
 
-            {startupLoading()}
+                {ready ?
+                    <HashRouter basename="/">
+                        <Route exact path="/">
+                            {onboardingCompleted ? <Redirect to="/vim" /> : <Redirect to="/onboarding" />}
+                        </Route>
+                        <Route path="/onboarding">
+                            <Onboarding />
+                        </Route>
 
-            {ready ?
-                <HashRouter basename="/">
-                    <Route exact path="/">
-                        {onboardingCompleted ? <Redirect to="/vim" /> : <Redirect to="/onboarding" />}
-                    </Route>
-                    <Route path="/onboarding">
-                        <Onboarding />
-                    </Route>
+                        <Route path="/vim">
+                            <VIMmain />
+                        </Route>
+                    </HashRouter>
 
-                    <Route path="/vim">
-                        <VIMMain />
-                    </Route>
-                </HashRouter>
-
-                : null}
+                    : null}
 
 
-        </ThemeProvider>
+            </ThemeProvider>
+        </StyledEngineProvider>
     );
 }
 
-function VIMMain(props) {
+function VIMmain(props) {
     const [target, setTarget] = useLocalStorage("lastVisitedPage", "collection")
 
+    //global states
     const [loadout] = useLoadoutRunner();
     const [inv] = useInventoryRunner();
-    const [config] = useConfigRunner();
+    const [profile] = useProfilesRunner();
 
     const routes = {
         "collection": Config.ENABLED_PAGES.collection === true ? <CollectionHome /> : <Redirect to="/" />,

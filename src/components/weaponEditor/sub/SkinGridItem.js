@@ -1,11 +1,13 @@
 import { React, useEffect, useState } from 'react';
 
 //utilities
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 //components
-import { Paper, Typography, Box, CircularProgress } from '@material-ui/core'
-import { Check, Lock } from '@material-ui/icons';
+import { Paper, Typography, Box, CircularProgress } from '@mui/material'
+import { Check, Lock } from '@mui/icons-material';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -45,11 +47,12 @@ function Weapon(props) {
     const theme = useTheme();
 
     const skinData = props.skinData;
+    const profileSkinData = props.profileData;
     const weaponData = props.weaponData;
     const isMelee = weaponData.uuid === "2f59173c-4bed-b6c3-2191-dea9b58be9c7"
     const equipped = props.equipped;
 
-    const isFavorite = props.skinData.favorite
+    const isFavorite = profileSkinData.favorite
     const isUnlocked = props.skinData.unlocked
 
     const [isSelected, setisSelected] = useState(skinData.uuid === props.selected.uuid);

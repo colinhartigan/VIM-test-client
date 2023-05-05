@@ -1,17 +1,19 @@
 import { React, useEffect, useState } from 'react';
 
 //utilities
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 //components
-import { Typography, Backdrop, Paper, Grid, Container, Divider, IconButton, Tooltip, Button, Fade } from '@material-ui/core';
+import { Typography, Backdrop, Paper, Grid, Container, Divider, IconButton, Tooltip, Button, Fade } from '@mui/material';
 import Icon from '@mdi/react'
 import WeaponSelectDialog from "../weaponSelect/WeaponSelectDialog.js";
 
 //icons
-import { FavoriteBorder, StarBorder, Favorite, Star, Lock, LockOpen, Close, Autorenew } from '@material-ui/icons';
+import { FavoriteBorder, StarBorder, Favorite, Star, Lock, LockOpen, Close, Autorenew } from '@mui/icons-material';
 import { mdiNumeric1Box, mdiNumeric2Box, mdiNumeric3Box, mdiNumeric4Box, mdiNumeric5Box, mdiNumeric6Box, mdiNumeric7Box, mdiNumeric8Box, mdiNumeric9Box } from '@mdi/js';
-import { mergeClasses } from '@material-ui/styles';
+import { mergeClasses } from '@mui/styles';
 
 const useStyles = makeStyles((theme) => ({
 
@@ -75,7 +77,7 @@ const useStyles = makeStyles((theme) => ({
     headerContent: {
         width: "100%",
         height: "auto",
-        marginBottom: "18px",
+        marginBottom: "10px",
         display: "flex",
         flexDirection: "row",
     },
@@ -101,8 +103,8 @@ const useStyles = makeStyles((theme) => ({
 
     instances: {
         height: "auto",
-        width: "95%",
-        border: `1px rgba(255,255,255,.2) solid`,
+        width: "100%",
+        //border: `1px rgba(255,255,255,.2) solid`,
         borderRadius: "5px",
         padding: "10px 10px 10px 10px",
         marginBottom: "10px",
@@ -184,7 +186,7 @@ function BuddyEditor(props) {
                     images.push(weapon.weapon_killstream_icon)
                 }
                 console.log(weapon)
-                newEquipped = { ...newEquipped, [weapon.buddy_instance_uuid]: {"name": weapon.weapon_name, "uuid": weapon.weapon_uuid} }
+                newEquipped = { ...newEquipped, [weapon.buddy_instance_uuid]: { "name": weapon.weapon_name, "uuid": weapon.weapon_uuid } }
             }
         })
         console.log(newEquipped)
@@ -199,13 +201,12 @@ function BuddyEditor(props) {
             buddyData: buddyData,
         }
 
-        props.saveCallback(buddyData.uuid,data)
-            .then(() => {
-                setOpen(false);
-                setTimeout(() => {
-                    props.closeEditor();
-                }, 150)
-            });
+
+        setOpen(false);
+        setTimeout(() => {
+            props.closeEditor();
+            props.saveCallback(buddyData.uuid, buddyData.display_name, data)
+        })
     }
 
     function equipBuddy(instanceUuid, instanceNum) {
@@ -221,7 +222,7 @@ function BuddyEditor(props) {
         Object.keys(inventory.buddies).forEach(key => {
             var buddy = inventory.buddies[key]
             Object.keys(buddy.instances).forEach(inst => {
-                if(buddy.instances[inst].locked) {
+                if (buddy.instances[inst].locked) {
                     console.log(buddy)
                     disabled.push(buddy.instances[inst].locked_weapon_display_name)
                 }
@@ -272,21 +273,21 @@ function BuddyEditor(props) {
         }
     }
 
-    function toggleFavorite(instanceUuid){
-        var newBuddyData = {...buddyData}
+    function toggleFavorite(instanceUuid) {
+        var newBuddyData = { ...buddyData }
         newBuddyData.instances[instanceUuid].favorite = !newBuddyData.instances[instanceUuid].favorite
         setBuddyData(newBuddyData)
     }
 
-    function toggleSuperFavorite(instanceUuid){
-        var newBuddyData = {...buddyData}
+    function toggleSuperFavorite(instanceUuid) {
+        var newBuddyData = { ...buddyData }
         newBuddyData.instances[instanceUuid].super_favorite = !newBuddyData.instances[instanceUuid].super_favorite
         setBuddyData(newBuddyData)
     }
 
-    function toggleLock(instanceUuid){
-        var newBuddyData = {...buddyData}
-        if(buddyData.instances[instanceUuid].locked === false){
+    function toggleLock(instanceUuid) {
+        var newBuddyData = { ...buddyData }
+        if (buddyData.instances[instanceUuid].locked === false) {
             newBuddyData.instances[instanceUuid].locked = true
             newBuddyData.instances[instanceUuid].locked_weapon_uuid = equippedInstanceWeapons[instanceUuid].uuid
             newBuddyData.instances[instanceUuid].locked_weapon_display_name = equippedInstanceWeapons[instanceUuid].name
@@ -345,7 +346,11 @@ function BuddyEditor(props) {
 
                             <div style={{ flexGrow: 1, height: "60px", display: "flex", flexDirection: "row", justifyContent: "flex-end", alignItems: "center" }}>
                                 <Tooltip title="Save" className={classes.headerButton}>
-                                    <IconButton onClick={save} disabled={saving} style={{ height: "40px", width: "40px" }}>
+                                    <IconButton
+                                        onClick={save}
+                                        disabled={saving}
+                                        style={{ height: "40px", width: "40px" }}
+                                        size="large">
                                         {saving ? <Autorenew className={classes.loading} /> : <Close />}
                                     </IconButton>
                                 </Tooltip>
@@ -376,7 +381,11 @@ function BuddyEditor(props) {
                                                 <div style={{ width: "50%", height: "100%", display: "flex", flexDirection: "row", justifyContent: "flex-end", alignItems: "center", }}>
 
                                                     <Tooltip title={"Lock instance to current weapon"}>
-                                                        <IconButton disabled={!equipped || favorite || superFavorite} onClick={() => {toggleLock(instanceData.uuid)}} className={classes.instanceHeaderButton}>
+                                                        <IconButton
+                                                            disabled={!equipped || favorite || superFavorite}
+                                                            onClick={() => { toggleLock(instanceData.uuid) }}
+                                                            className={classes.instanceHeaderButton}
+                                                            size="large">
                                                             {locked ? <Lock /> : <LockOpen />}
                                                         </IconButton>
                                                     </Tooltip>
@@ -390,7 +399,11 @@ function BuddyEditor(props) {
                                                     </Tooltip> */}
 
                                                     <Tooltip title={"Favorite"}>
-                                                        <IconButton disabled={locked}  onClick={() => {toggleFavorite(instanceData.uuid)}} className={classes.instanceHeaderButton}>
+                                                        <IconButton
+                                                            disabled={locked}
+                                                            onClick={() => { toggleFavorite(instanceData.uuid) }}
+                                                            className={classes.instanceHeaderButton}
+                                                            size="large">
                                                             {favorite ? <Favorite /> : <FavoriteBorder />}
                                                         </IconButton>
                                                     </Tooltip>
@@ -411,7 +424,7 @@ function BuddyEditor(props) {
                                             </div>
 
                                         </div>
-                                    )
+                                    );
                                 }
                                 )}
                         </div>
@@ -421,7 +434,7 @@ function BuddyEditor(props) {
                 </Paper>
             </Container>
         </Backdrop>
-    )
+    );
 }
 
 export default BuddyEditor

@@ -2,13 +2,15 @@ import { React, useState, useRef, useEffect } from 'react';
 import Fuse from 'fuse.js'
 
 //utilities
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 //components
-import { Button, Grid, InputBase } from '@material-ui/core';
+import { Button, Grid, InputBase } from '@mui/material';
 
 //icons
-import { Search } from '@material-ui/icons'
+import { Search } from '@mui/icons-material'
 
 import BuddyItem from './sub/BuddyItem.js'
 import BuddyEditor from '../buddyEditor/BuddyEditor.js'
@@ -42,13 +44,13 @@ const useStyles = makeStyles((theme) => ({
 
     mainGrid: {
         maxHeight: "100%",
-        width: "100%",
+        width: "99%",
     },
 
     serachContainer: {
         height: "60px",
-        marginTop: "10px",
-        marginBottom: "15px",
+        padding: "10px 0px",
+        marginLeft: "12px",
         width: "100%",
         display: "flex",
         flexDirection: "row",
@@ -77,7 +79,7 @@ const useStyles = makeStyles((theme) => ({
     },
     inputInput: {
         padding: theme.spacing(1, 1, 1, 0),
-        paddingLeft: `calc(1em + ${theme.spacing(4)}px)`,
+        paddingLeft: `calc(1em + ${theme.spacing(4)})`,
         width: '100%',
     },
 }));
@@ -164,20 +166,20 @@ function Buddies(props) {
                     />
                 </div>
 
-                <div style={{ width: "auto", height: "100%", marginLeft: "10px", display: "flex", flexDirection: "row", justifyContent: "flex", alignItems: "center" }}>
+                <div style={{ width: "auto", height: "60px", marginLeft: "10px", display: "flex", flexDirection: "row", justifyContent: "flex", alignItems: "center" }}>
                     <Button variant="contained" disableElevation color="secondary" onClick={() => { favoriteAll(true) }} style={{ margin: "5px" }}>Favorite all</Button>
                     <Button variant="contained" disableElevation color="secondary" onClick={() => { favoriteAll(false) }} style={{ margin: "5px" }}>Unfavorite all</Button>
                 </div>
             </div>
 
             <div className={classes.gridContainer}>
-                <Grid container spacing={3} className={classes.mainGrid} direction="row" justifyContent="flex-start" alignItems="flex-start">
+                <Grid container className={classes.mainGrid} direction="row" justifyContent="flex-start" alignItems="flex-start">
                     {inventory !== undefined && renderBuddies ? Object.keys(inventory).map((key) => {
                         var data = inventory[key]
 
                         return (
                             searchResults.includes(data.display_name) || searchResults.length === 0 ?
-                                <Grid item key={data.display_name} xl={3} lg={4} md={6} sm={12} xs={12}>
+                                <Grid item p={1.5} key={data.display_name} xl={3} lg={4} md={6} sm={12} xs={12}>
                                     <BuddyItem data={data} loadout={loadout} buddyEditorCallback={editorCallback} favoriteCallback={updateBuddyFavorite} />
                                 </Grid>
                                 : null

@@ -1,16 +1,17 @@
 import { React, useEffect, useState } from 'react';
 
 //utilities
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 //components
-import { Tooltip, Container, Typography, Toolbar, IconButton, Slide, AppBar } from '@material-ui/core';
-import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
+import { Tooltip, Container, Typography, Toolbar, IconButton, Slide, AppBar } from '@mui/material';
+import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 
-import { Check } from '@material-ui/icons';
+import { Check } from '@mui/icons-material';
 
 const useStyles = makeStyles((theme) => ({
-
 
 }));
 
@@ -47,8 +48,7 @@ function LevelSelector(props) {
         setSelectedLevel(props.selectedLevelIndex.toString())
     }, [props.selectedLevelIndex])
 
-    if (maxLevel !== "1"){
-        console.log(equippedLevelIndex)
+    if (maxLevel !== "1") {
         return (
             <div style={{ flexGrow: 1, width: "50%", display: "flex", flexDirection: "row", justifyContent: "flex-start", height: "45px", }}>
                 <ToggleButtonGroup
@@ -60,15 +60,16 @@ function LevelSelector(props) {
                 >
                     {Object.keys(props.levelData).map(uuid => {
                         var data = props.levelData[uuid]
+                        var profileData = props.profileLevelData[uuid]
                         var index = data.index.toString();
-                        var equipped = index === equippedLevelIndex && selectedSkinIsEquipped 
+                        var equipped = index === equippedLevelIndex && selectedSkinIsEquipped
 
                         return (
-                            <Tooltip key={data.display_name} title={data.unlocked ? (data.favorite ? `Favorited - ${data.level_type}` : data.level_type) : `${data.level_type} (Locked)`} arrow>
-                                <ToggleButton selected={selectedLevel === index} value={index} aria-label={data.index} style={{ border: (data.favorite ? `1px #996D2D solid` : null) }}>
-                                    <Typography variant="body" style={{zIndex: 1, color: (equipped && selectedLevel === index ? "rgba(255,255,255,.8)" : null)}}>{data.shorthand_display_name}</Typography>
+                            <Tooltip key={data.display_name} title={data.unlocked ? (profileData.favorite ? `Favorited - ${data.level_type}` : data.level_type) : `${data.level_type} (Locked)`} arrow>
+                                <ToggleButton selected={selectedLevel === index} value={index} aria-label={data.index} style={{ border: (profileData.favorite ? `1px #996D2D solid` : null), display: "flex", flexDirection: "column" }}>
+                                    <Typography variant="body" style={{ zIndex: 1, color: (equipped && selectedLevel === index ? "rgba(255,255,255,.8)" : null) }}>{data.shorthand_display_name}</Typography>
 
-                                    {equipped ? <Check style={{ width: "auto", height: "25px", position: "absolute", bottom: "", objectFit: "contain", alignSelf: "flex-end", margin: "auto", color: "#66bb6a", zIndex: 2}} /> : null}
+                                    {equipped ? <Check style={{ width: "auto", height: "25px", position: "absolute", bottom: "", objectFit: "contain", alignSelf: "flex-end", margin: "auto", color: "#66bb6a", zIndex: 2 }} /> : null}
 
                                 </ToggleButton>
                             </Tooltip>

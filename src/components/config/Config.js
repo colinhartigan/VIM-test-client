@@ -1,13 +1,15 @@
 import { React, useEffect, useState } from 'react';
 
 //utilities
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 //components
-import { Typography, Divider, Select, InputLabel, MenuItem, FormControl, Switch, Container, IconButton, TextField, Fade } from '@material-ui/core'
+import { Typography, Divider, Select, InputLabel, MenuItem, FormControl, Switch, Container, IconButton, TextField, Fade } from '@mui/material'
 
 //icons 
-import { Close, SettingsInputAntenna } from '@material-ui/icons'
+import { Close, SettingsInputAntenna } from '@mui/icons-material'
 
 import socket from "../../services/Socket";
 import { useConfig } from '../../services/useConfig';
@@ -44,7 +46,7 @@ const useStyles = makeStyles((theme) => ({
         width: "100%",
         height: "75px",
         margin: "0px 20px 10px 20px",
-        backgroundColor: "#424242",
+        backgroundColor: "transparent",
         paddingTop: "0px",
         position: "sticky",
         top: 0,
@@ -226,6 +228,7 @@ function Config(props) {
     }, [props.saveTrigger])
 
     function generateSection(section, sectionData) {
+        console.log(sectionData)
         return (
             <Fade in>
                 <div className={classes.section}>
@@ -244,7 +247,7 @@ function Config(props) {
 
     function generateVisuals() {
         return (
-            <Container maxWidth="xl" className={classes.body}>
+            <Container maxWidth="lg" className={classes.body}>
                 {Object.keys(config).map(section => {
                     var sectionData = config[section];
                     return generateSection(section, sectionData);
@@ -256,32 +259,34 @@ function Config(props) {
     function saveAndClose() {
         console.log("saving")
         setSaving(true);
-        publishConfig(() => {props.close(false)});
+        publishConfig(() => { props.close(false) });
     }
 
-    return (
-        <div className={classes.root}>
-            {props.showHeader ?
-                <div className={classes.header}>
-                    <Typography variant="h4" style={{ color: theme.palette.primary.light, fontSize: "2.2rem", flexGrow: 1, margin: "auto" }}>Settings</Typography>
-                    <IconButton
-                        aria-label="randomize"
-                        aria-controls="menu-appbar"
-                        aria-haspopup="true"
-                        edge="end"
-                        color="inherit"
-                        className={classes.closeButton}
-                        onClick={saveAndClose}
-                        disabled={config === null || saving}
-                    >
-                        <Close />
-                    </IconButton>
-                </div>
-                : null}
+    return <>
+        {config !== null ?
+            <div className={classes.root}>
+                {props.showHeader ?
+                    <div className={classes.header}>
+                        <Typography variant="h4" style={{ color: theme.palette.primary.light, fontSize: "2.2rem", flexGrow: 1, margin: "auto" }}>Settings</Typography>
+                        <IconButton
+                            aria-label="randomize"
+                            aria-controls="menu-appbar"
+                            aria-haspopup="true"
+                            edge="end"
+                            color="inherit"
+                            className={classes.closeButton}
+                            onClick={saveAndClose}
+                            disabled={config === null || saving}
+                            size="large">
+                            <Close />
+                        </IconButton>
+                    </div>
+                    : null}
 
-            {config !== null ? generateVisuals() : null}
-        </div>
-    )
+                {config !== null ? generateVisuals() : null}
+            </div>
+        : null }
+    </>;
 }
 
 export default Config;

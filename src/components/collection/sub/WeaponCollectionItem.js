@@ -1,11 +1,12 @@
 import { React, useEffect, useState } from 'react';
 
 //utilities
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+import makeStyles from '@mui/styles/makeStyles';
 import useWindowDimensions from '../../../services/useWindowDimensions.js';
 
 //components
-import { Grid, Grow, Typography, Paper, Fade, Collapse } from '@material-ui/core'
+import { Grid, Grow, Typography, Paper, Fade, Collapse } from '@mui/material'
 
 const stockImageSize = "250px";
 
@@ -146,7 +147,7 @@ const useStyles = makeStyles((theme) => ({
         height: "100%",
         position: "relative",
         right: 0,
-        bottom: 7,
+        bottom: 8,
         zIndex: 2,
     },
 
@@ -304,7 +305,7 @@ function Weapon(props) {
                             </Collapse>
                         </div>
                     </div>
-                    <Grow in>
+                    <Grow in={!isUpdatingBuddy}>
                         <div className={classes.buddyContainer} style={{ width: props.isSidearm ? "20%" : "14%" }}>
                             {props.uuid !== "2f59173c-4bed-b6c3-2191-dea9b58be9c7" ?
                                 <img alt={skinData.buddy_name} className={classes.buddyImage} src={skinData.buddy_image !== "" ? skinData.buddy_image : null} />

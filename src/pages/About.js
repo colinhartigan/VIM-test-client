@@ -1,14 +1,15 @@
 import { React, useEffect, useState } from 'react';
 
 //utilities
-import { makeStyles, useTheme, } from '@material-ui/core/styles';
-import { Divider } from '@material-ui/core'
+import { useTheme } from '@mui/material/styles';
+import makeStyles from '@mui/styles/makeStyles';
+import { Divider } from '@mui/material'
 
 //components
 import Header from '../components/misc/Header.js'
 import Footer from '../components/misc/Footer.js'
 
-import { Grid, Container, Typography } from '@material-ui/core'
+import { Grid, Container, Typography } from '@mui/material'
 
 const useStyles = makeStyles((theme) => ({
     header: {
@@ -54,6 +55,7 @@ function About(props) {
 
     const [licenseTexts, setLicenseTexts] = useState({});
     const [licenseDivs, setLicenseDivs] = useState([]);
+    const [date, setDate] = useState("")
 
     useEffect(() => {
         document.title = "VIM // About"
@@ -65,6 +67,8 @@ function About(props) {
                 .then(response => response.text())
                 .then(text => setLicenseTexts({ ...licenseTexts, [key]: text }))
         }
+        var dt = new Date()
+        setDate(dt.getFullYear())
     }, []);
 
     useEffect(() => {
@@ -93,7 +97,7 @@ function About(props) {
 
                     <div className={classes.content}>
                         <Typography variant="body1" style={{ marginBottom: "10px" }}>
-                            © 2021-2022 Colin Hartigan. All Rights Reserved.
+                            © 2021-{date} Colin Hartigan. All Rights Reserved.
                         </Typography>
 
                         <div className={classes.section}>
@@ -111,13 +115,13 @@ function About(props) {
                                 VALORANT's client API were instrumental in VIM's development.
                             </Typography>
                         </div>
-                        <Divider style={{margin: "15px 0px"}} />
+                        <Divider style={{ margin: "15px 0px" }} />
                         <div className={classes.section} style={{ marginBottom: "10px", }}>
                             <Typography variant="h3" style={{ color: "white", fontSize: "2rem", marginBottom: "10px", }}>License</Typography>
                             <Typography variant="body1" style={{ lineHeight: ".5em", width: "95%", marginLeft: "1%" }}>
                                 <p>MIT License</p>
                                 <br />
-                                <p>Copyright (c) 2021 Colin Hartigan</p>
+                                <p>Copyright (c) 2022 Colin Hartigan</p>
                                 <br />
                                 <p>Permission is hereby granted, free of charge, to any person obtaining a copy</p>
                                 <p>of this software and associated documentation files (the "Software"), to deal</p>
@@ -136,6 +140,14 @@ function About(props) {
                                 <p>LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</p>
                                 <p>OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE</p>
                                 <p>SOFTWARE.</p>
+                            </Typography>
+                        </div>
+
+                        <div className={classes.section} style={{ marginBottom: "10px", }}>
+                            <Typography variant="h3" style={{ color: "white", fontSize: "2rem", marginBottom: "10px", }}>Legal (Riot's Jibber Jabber)</Typography>
+                            <Typography variant="body1" style={{ lineHeight: ".5em", width: "95%", marginLeft: "1%" }}>
+                                <p>This project is not affiliated with Riot Games or any of its employees and therefore does not reflect the views of said parties. This is purely a fan-made project to enhance VALORANT's inventory management.</p>
+                                <p>Riot Games does not endorse or sponsor this project. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.</p>
                             </Typography>
                         </div>
 
